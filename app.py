@@ -2,6 +2,32 @@ import random
 import streamlit as st
 
 def get_range_for_difficulty(difficulty: str):
+    """
+    Determine the number range for guessing based on game difficulty level.
+    
+    This function maps difficulty settings to their corresponding numeric ranges.
+    Easier difficulties have smaller ranges (fewer numbers to guess from),
+    while harder difficulties have larger ranges (more numbers to guess from).
+    
+    Args:
+        difficulty (str): The game difficulty level. Expected values are:
+            - "Easy": Returns range 1-20 (smallest range, easiest to guess)
+            - "Normal": Returns range 1-100 (medium range, default difficulty)
+            - "Hard": Returns range 1-50 (larger range, harder difficulty)
+    
+    Returns:
+        tuple: A tuple of two integers (min, max) representing the inclusive
+            range of numbers the player must guess from. Default is (1, 100)
+            if difficulty doesn't match any defined level.
+    
+    Examples:
+        >>> get_range_for_difficulty("Easy")
+        (1, 20)
+        >>> get_range_for_difficulty("Hard")
+        (1, 50)
+        >>> get_range_for_difficulty("Unknown")
+        (1, 100)
+    """
     if difficulty == "Easy":
         return 1, 20
     if difficulty == "Normal":

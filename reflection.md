@@ -5,8 +5,16 @@ Answer each question in 3 to 5 sentences. Be specific and honest about what actu
 ## 1. What was broken when you started?
 
 - What did the game look like the first time you ran it?
+
+Looks overall reasonalble functionalities, reach maximum guess attempt since the hints are backwards
+
 - List at least two concrete bugs you noticed at the start  
   (for example: "the secret number kept changing" or "the hints were backwards").
+
+the hints were backwards vs. should give the forwards directional hints
+the score does not change monotonically vs. make sense to decrease as attempt time increase
+the new game button does not work vs. new game could be initiated by clicking new game instead of refreshing page every time
+easy mode suppose to handle 1 to 20 but could input 1 to 100 vs should accept only guess between 1 to 20
 
 ---
 
