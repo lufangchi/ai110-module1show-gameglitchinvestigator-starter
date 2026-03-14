@@ -1,94 +1,12 @@
 import random
 import streamlit as st
 
-def get_range_for_difficulty(difficulty: str):
-    """
-    Determine the number range for guessing based on game difficulty level.
-    
-    This function maps difficulty settings to their corresponding numeric ranges.
-    Easier difficulties have smaller ranges (fewer numbers to guess from),
-    while harder difficulties have larger ranges (more numbers to guess from).
-    
-    Args:
-        difficulty (str): The game difficulty level. Expected values are:
-            - "Easy": Returns range 1-20 (smallest range, easiest to guess)
-            - "Normal": Returns range 1-100 (medium range, default difficulty)
-            - "Hard": Returns range 1-50 (larger range, harder difficulty)
-    
-    Returns:
-        tuple: A tuple of two integers (min, max) representing the inclusive
-            range of numbers the player must guess from. Default is (1, 100)
-            if difficulty doesn't match any defined level.
-    
-    Examples:
-        >>> get_range_for_difficulty("Easy")
-        (1, 20)
-        >>> get_range_for_difficulty("Hard")
-        (1, 50)
-        >>> get_range_for_difficulty("Unknown")
-        (1, 100)
-    """
-    if difficulty == "Easy":
-        return 1, 20
-    if difficulty == "Normal":
-        return 1, 100
-    if difficulty == "Hard":
-        return 1, 50
-    return 1, 100
-
-
-def parse_guess(raw: str):
-    if raw is None:
-        return False, None, "Enter a guess."
-
-    if raw == "":
-        return False, None, "Enter a guess."
-
-    try:
-        if "." in raw:
-            value = int(float(raw))
-        else:
-            value = int(raw)
-    except Exception:
-        return False, None, "That is not a number."
-
-    return True, value, None
-
-
-def check_guess(guess, secret):
-    if guess == secret:
-        return "Win", "🎉 Correct!"
-
-    try:
-        if guess > secret:
-            return "Too High", "📈 Go HIGHER!"
-        else:
-            return "Too Low", "📉 Go LOWER!"
-    except TypeError:
-        g = str(guess)
-        if g == secret:
-            return "Win", "🎉 Correct!"
-        if g > secret:
-            return "Too High", "📈 Go HIGHER!"
-        return "Too Low", "📉 Go LOWER!"
-
-
-def update_score(current_score: int, outcome: str, attempt_number: int):
-    if outcome == "Win":
-        points = 100 - 10 * (attempt_number + 1)
-        if points < 10:
-            points = 10
-        return current_score + points
-
-    if outcome == "Too High":
-        if attempt_number % 2 == 0:
-            return current_score + 5
-        return current_score - 5
-
-    if outcome == "Too Low":
-        return current_score - 5
-
-    return current_score
+from logic_utils import (
+    get_range_for_difficulty,
+    parse_guess,
+    check_guess,
+    update_score,
+)
 
 st.set_page_config(page_title="Glitchy Guesser", page_icon="🎮")
 
@@ -115,11 +33,23 @@ low, high = get_range_for_difficulty(difficulty)
 st.sidebar.caption(f"Range: {low} to {high}")
 st.sidebar.caption(f"Attempts allowed: {attempt_limit}")
 
+# Check if difficulty has changed and reset game if it has
+if "current_difficulty" not in st.session_state:
+    st.session_state.current_difficulty = difficulty
+elif st.session_state.current_difficulty != difficulty:
+    # Difficulty changed, reset the game
+    st.session_state.current_difficulty = difficulty
+    st.session_state.attempts = 1
+    st.session_state.score = 0
+    st.session_state.status = "playing"
+    st.session_state.history = []
+    st.session_state.secret = random.randint(low, high)
+
 if "secret" not in st.session_state:
     st.session_state.secret = random.randint(low, high)
 
 if "attempts" not in st.session_state:
-    st.session_state.attempts = 1
+    st.session_state.attempts = 0
 
 if "score" not in st.session_state:
     st.session_state.score = 0
@@ -132,21 +62,33 @@ if "history" not in st.session_state:
 
 st.subheader("Make a guess")
 
-st.info(
-    f"Guess a number between 1 and 100. "
-    f"Attempts left: {attempt_limit - st.session_state.attempts}"
-)
+#st.info(
+    #f"Guess a number between {low} and {high}. "
+    #f"Attempts left: {attempt_limit - len(st.session_state.history)}"
+#)
 
-with st.expander("Developer Debug Info"):
-    st.write("Secret:", st.session_state.secret)
-    st.write("Attempts:", st.session_state.attempts)
-    st.write("Score:", st.session_state.score)
-    st.write("Difficulty:", difficulty)
-    st.write("History:", st.session_state.history)
+#with st.expander("Developer Debug Info"):
+    #st.write("Secret:", st.session_state.secret)
+    #st.write("Attempts:", st.session_state.attempts)
+    #st.write("Score:", st.session_state.score)
+    #st.write("Difficulty:", difficulty)
+    #st.write("History:", st.session_state.history)
+
+guess_key = f"guess_input_{difficulty}"
+
+# Ensure the text input has a known session state key before creating the widget.
+if guess_key not in st.session_state:
+    st.session_state[guess_key] = ""
+
+# When a new game is started, we set a flag so that on the next rerun the input is cleared
+# before the widget is instantiated (avoids Streamlit API errors).
+if st.session_state.get("reset_guess_input", False):
+    st.session_state[guess_key] = ""
+    st.session_state["reset_guess_input"] = False
 
 raw_guess = st.text_input(
     "Enter your guess:",
-    key=f"guess_input_{difficulty}"
+    key=guess_key,
 )
 
 col1, col2, col3 = st.columns(3)
@@ -157,9 +99,20 @@ with col2:
 with col3:
     show_hint = st.checkbox("Show hint", value=True)
 
+#FIX: identify the new game generation logic with Copilot Agent Ask mode, improve the code with in line chat to reset the game state and generate a new secret when the player clicks "New Game"
 if new_game:
-    st.session_state.attempts = 0
-    st.session_state.secret = random.randint(1, 100)
+    # Reset all game state so the player can start fresh without needing a browser refresh.
+    st.session_state.attempts = 1
+    st.session_state.score = 0
+    st.session_state.status = "playing"
+    st.session_state.history = []
+
+    # Keep the new secret aligned with the currently selected difficulty range.
+    st.session_state.secret = random.randint(low, high)
+
+    # Set a flag so the input is cleared before the widget is created on the next run.
+    st.session_state["reset_guess_input"] = True
+
     st.success("New game started.")
     st.rerun()
 
@@ -170,6 +123,7 @@ if st.session_state.status != "playing":
         st.error("Game over. Start a new game to try again.")
     st.stop()
 
+# FIX: update the reamining attempts logic to be more intuitive for the player
 if submit:
     st.session_state.attempts += 1
 
@@ -195,7 +149,15 @@ if submit:
             current_score=st.session_state.score,
             outcome=outcome,
             attempt_number=st.session_state.attempts,
+            max_attempts=attempt_limit,
         )
+
+        with st.expander("Updated Debug Info"):
+            st.write("Secret:", st.session_state.secret)
+            st.write("Next Attempt:", st.session_state.attempts)
+            #st.write("Score:", st.session_state.score)
+            st.write("Outcome:", outcome)
+            st.write("History:", st.session_state.history)
 
         if outcome == "Win":
             st.balloons()
@@ -205,13 +167,17 @@ if submit:
                 f"Final score: {st.session_state.score}"
             )
         else:
-            if st.session_state.attempts >= attempt_limit:
+            if st.session_state.attempts > attempt_limit:
                 st.session_state.status = "lost"
                 st.error(
                     f"Out of attempts! "
                     f"The secret was {st.session_state.secret}. "
                     f"Score: {st.session_state.score}"
                 )
+    st.divider()
+st.info(
+    f"Guess a number between {low} and {high}. "
+    f"Attempts left: {attempt_limit - len(st.session_state.history)}"
+)
 
-st.divider()
 st.caption("Built by an AI that claims this code is production-ready.")
