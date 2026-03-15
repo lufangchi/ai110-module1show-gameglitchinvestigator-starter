@@ -25,13 +25,21 @@ It wrote the code, ran away, and now the game is unplayable.
 
 ## 📝 Document Your Experience
 
-- [ ] Describe the game's purpose.
-- [ ] Detail which bugs you found.
-- [ ] Explain what fixes you applied.
+- [x] **Game purpose:** A Streamlit number-guessing game where the player tries to guess a secret number within a limited number of attempts, guided by "Higher/Lower" hints and scored by efficiency.
+- [x] **Bugs found:**
+  1. **State bug** — The secret regenerated on every button click because `random.randint()` ran outside `st.session_state`.
+  2. **Hint logic bug** — "Go Higher/Lower" hints were inverted.
+  3. **Type glitch bug** — On even attempts, the secret was cast to `str`, breaking numeric comparison.
+  4. **New Game bug** — The button didn't fully reset game state.
+- [x] **Fixes applied:**
+  1. Store the secret in `st.session_state.secret`, initialized only once.
+  2. Swap hint messages in `check_guess()` so direction matches the guess.
+  3. Remove the odd/even `str()` cast — always pass an integer secret.
+  4. Reset all session state keys and call `st.rerun()` in the New Game handler.
 
 ## 📸 Demo
 
-- [ ] [Insert a screenshot of your fixed, winning game here]
+- ![alt text](image.png)
 
 ## 🚀 Stretch Features
 
